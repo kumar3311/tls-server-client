@@ -75,6 +75,18 @@ Sign Client CSR with CA.
     openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 365 -sha256
 ```
 
+###To extract the certificate from the .pem file:
+
+```
+openssl x509 -in yourfile.pem -out certificate.crt
+```
+
+###To extract the private key from the .pem file:
+
+```
+openssl pkey -in yourfile.pem -out private.key
+```
+
 ###4. C++ Client-Server Program Integration:
 
 ###Server-side:
