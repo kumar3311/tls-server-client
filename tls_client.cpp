@@ -1,6 +1,7 @@
 #include "tls_imp.hpp"
 
-const std::string SERVER_ADDR = "192.168.68.109"; 
+const std::string SERVER_ADDR = "xx.xx.xx.xx"; // Replace with the actual server address
+// const std::string SERVER_ADDR = "127.0.0.1"; // For local testing
 const int SERVER_PORT = 3336;
 const std::string CERT_FILE = "certs/client.crt";
 const std::string KEY_FILE = "certs/client.key";
@@ -105,25 +106,25 @@ int main() {
             ssl_writeline(ssl, "OK\n");
             break;
         } else if (args[0] == "NAME") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " " + "Nagarjuna Kumar D\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " " + "XXXXXXXX XXXXXX\n");
         } else if (args[0] == "MAILNUM") {
             ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " 2\n");
         } else if (args[0] == "MAIL1") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " nagarjunakumard@gmail.com\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " XXXXXXXXXXXXX@mail.com\n");
         } else if (args[0] == "MAIL2") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " d.nagarjunkumar@hotmail.com\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " XXXXXXXXXXXX@mail.com\n");
         } else if (args[0] == "SKYPE") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " d.nagarjunkumar@hotmail.com\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " xxxxxxxxxxxxxx@hotmail.com\n");
         } else if (args[0] == "BIRTHDATE") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " 21.07.1981\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " dd.mm.yyyy\n");
         } else if (args[0] == "COUNTRY") {
             ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " India\n");
         } else if (args[0] == "ADDRNUM") {
             ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " 2\n");
         } else if (args[0] == "ADDRLINE1") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " C2, Phase-2, VIP Anugraha\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " x, x streat, \n");
         } else if (args[0] == "ADDRLINE2") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " Kollapakkam, Chennai-600127\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " xxx area, Chennai-xxxxxx\n");
         }
     }
 
