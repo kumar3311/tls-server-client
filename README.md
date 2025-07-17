@@ -48,31 +48,31 @@ openssl genrsa -out server.key 2048
 Create Server Certificate Signing Request (CSR): This request contains information about the server and is signed by the CA.
 
 ```
-    openssl req -new -key server.key -out server.csr
+openssl req -new -key server.key -out server.csr
 ```
 
 Sign Server CSR with CA: Use the CA's private key to sign the server's CSR, creating the signed server certificate.
 
 ```
-    openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256
+openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out server.crt -days 365 -sha256
 ```
 
 ### 3. Generate Client Certificate:
 Generate Client Private Key.
 
 ```
-    openssl genrsa -out client.key 2048
+openssl genrsa -out client.key 2048
 ```
 Create Client Certificate Signing Request (CSR).
 
 ```
-    openssl req -new -key client.key -out client.csr
+openssl req -new -key client.key -out client.csr
 ```
 
 Sign Client CSR with CA.
 
 ```
-    openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 365 -sha256
+openssl x509 -req -in client.csr -CA ca.crt -CAkey ca.key -CAcreateserial -out client.crt -days 365 -sha256
 ```
 
 ### To extract the certificate from the .pem file:
