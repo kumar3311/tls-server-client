@@ -11,7 +11,9 @@ int main() {
     SSL_load_error_strings();
     OpenSSL_add_all_algorithms();
 
-    SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
+    // SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
+    // Use TLSv1.2 only
+    SSL_CTX* ctx = SSL_CTX_new(TLSv1_2_client_method());
     if (!ctx) {
         std::cerr << "SSL_CTX_new failed\n";
         return 1;
@@ -22,8 +24,52 @@ int main() {
         SSL_CTX_free(ctx);
         return 1;
     }
+    // Check if cert and key are valid
+    if (!SSL_CTX_check_private_key(ctx)) {
+        std::cerr << "Certificate and private key do not match or are invalid\n";
+        SSL_CTX_free(ctx);
+        return 1;
+    }
+    // Check if certificate is expired
+    X509* cert = nullptr;
+    FILE* fp = fopen(CERT_FILE.c_str(), "r");
+    if (fp) {
+        cert = PEM_read_X509(fp, nullptr, nullptr, nullptr);
+        fclose(fp);
+    }
+    if (!cert) {
+        std::cerr << "Failed to read certificate for expiry check\n";
+        SSL_CTX_free(ctx);
+        return 1;
+    }
+    if (X509_cmp_current_time(X509_get_notBefore(cert)) > 0) {
+        std::cerr << "Certificate is not yet valid\n";
+        X509_free(cert);
+        SSL_CTX_free(ctx);
+        return 1;
+    }
+    if (X509_cmp_current_time(X509_get_notAfter(cert)) < 0) {
+        std::cerr << "Certificate is expired\n";
+        X509_free(cert);
+        SSL_CTX_free(ctx);
+        return 1;
+    }
+    X509_free(cert);
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    // Set source port to 3336
+    sockaddr_in src_addr{};
+    src_addr.sin_family = AF_INET;
+    src_addr.sin_port = htons(SERVER_PORT); // source port
+    src_addr.sin_addr.s_addr = INADDR_ANY;
+    if (bind(sock, (sockaddr*)&src_addr, sizeof(src_addr)) != 0) {
+        std::cerr << "Failed to bind source port\n";
+        close(sock);
+        SSL_CTX_free(ctx);
+        return 1;
+    }
+
     struct hostent* host = gethostbyname(SERVER_ADDR.c_str());
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
@@ -51,7 +97,15 @@ int main() {
     unsigned long pov_count = 0;
     while (true) {
         std::string line = ssl_readline(ssl);
-        if (line.empty()) break;
+        if (line.empty()) 
+        { 
+            std::cout << "no data received from server, waiting..." << std::endl;
+            ssl_writeline(ssl, "HELO\n");
+            std::cout << "send HELO command to server" << std::endl;
+            continue;
+            
+        }
+
         auto args = split(line);
 
         if (args.empty()) continue;
@@ -78,10 +132,9 @@ int main() {
             for (int t = 0; t < num_threads; ++t) {
                 workers.emplace_back([&, t]() {
                     while (!found.load(std::memory_order_relaxed)) {
-                        std::string suffix = random_string( t + 1);
+                        std::string suffix = random_string( t + 1 );
                         std::string cksum = sha1_hex(authdata + suffix);
-                        
-                       //std::cout << " authdata + suffix: " << authdata + " " + suffix << " thread id - " << t <<std::endl;
+                       
                        if(hasTwoOrMoreZeroPrefix(cksum)) {
                             pov_count++;
                             std::cout << " authdata + suffix: " << authdata + " <---> " + suffix << "  --> cksum :" <<cksum <<"  pov_count: " << pov_count << "\t\r"<< std::flush;
@@ -106,15 +159,15 @@ int main() {
             ssl_writeline(ssl, "OK\n");
             break;
         } else if (args[0] == "NAME") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " " + "XXXXXXXX XXXXXX\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " " + "xxxxx xxxxx xxxxxxx\n");
         } else if (args[0] == "MAILNUM") {
             ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " 2\n");
         } else if (args[0] == "MAIL1") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " XXXXXXXXXXXXX@mail.com\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " xxxxxxxxxxxxxxxx@gmail.com\n");
         } else if (args[0] == "MAIL2") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " XXXXXXXXXXXX@mail.com\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " xxxxxxxxxxxxxxxx@hotmail.com\n");
         } else if (args[0] == "SKYPE") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " xxxxxxxxxxxxxx@hotmail.com\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " xxxxxxxxxxxxxxxx@hotmail.com\n");
         } else if (args[0] == "BIRTHDATE") {
             ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " dd.mm.yyyy\n");
         } else if (args[0] == "COUNTRY") {
@@ -122,12 +175,13 @@ int main() {
         } else if (args[0] == "ADDRNUM") {
             ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " 2\n");
         } else if (args[0] == "ADDRLINE1") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " x, x streat, \n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " dd, xxddddxxx dddddd\n");
         } else if (args[0] == "ADDRLINE2") {
-            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " xxx area, Chennai-xxxxxx\n");
+            ssl_writeline(ssl, sha1_hex(authdata + args[1]) + " xxxxxxxxx, xxxxxxxxx-xxxxxx\n");
         }
     }
 
+    std::cout << " closing tls client connection " << std::endl;
     SSL_shutdown(ssl);
     SSL_free(ssl);
     close(sock);
